@@ -4,6 +4,13 @@
   "version": "0.0.0",
   "type": "module",
   "main": "index.js",
+  "scripts": {
+    "dev": "echo \"@repo/eslint-config: no dev\"",
+    "lint": "echo \"no lint\"",
+    "typecheck": "echo \"no typecheck\"",
+    "test": "echo \"no test\"",
+    "build": "echo \"no build\""
+  },
   "dependencies": {
     "eslint-config-prettier": "^9.1.0",
     "typescript-eslint": "^8.0.0"
