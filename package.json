@@ -10,9 +10,9 @@
     "typecheck": "turbo run typecheck",
     "format:check": "prettier --check .",
     "format:write": "prettier --write .",
-    "test": "turbo run test -- --run",
+    "test": "turbo run test",
     "build": "turbo run build",
-    "quality": "turbo run lint typecheck && prettier --check . && turbo run test -- --run && turbo run build",
+    "quality": "turbo run lint typecheck && prettier --check . && turbo run test && turbo run build",
     "dev": "turbo run dev",
     "prepare": "husky",
     "db:migrate": "prisma migrate dev",
@@ -24,11 +24,14 @@
   "devDependencies": {
     "@commitlint/cli": "^19.0.0",
     "@commitlint/config-conventional": "^19.0.0",
+    "eslint": "^9.9.0",
+    "eslint-config-prettier": "^9.1.0",
     "husky": "^9.1.0",
     "lint-staged": "^15.0.0",
     "prettier": "^3.3.3",
     "prisma": "^5.20.0",
     "turbo": "^2.3.0",
-    "typescript": "^5.6.0"
+    "typescript": "^5.6.0",
+    "typescript-eslint": "^8.0.0"
   }
 }

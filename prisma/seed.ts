@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -6,7 +6,7 @@ async function main() {
   await prisma.transactionType.upsert({
     where: { id: 1 },
     update: {},
-    create: { id: 1, name: "PIX" },
+    create: { id: 1, name: 'PIX' },
   });
 }
 

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 export const createTransactionSchema = z.object({
   accountExternalIdDebit: z.string().uuid(),
   accountExternalIdCredit: z.string().uuid(),
@@ -16,6 +16,6 @@ export const transactionCreatedEventSchema = z.object({
 });
 export const transactionStatusUpdatedEventSchema = z.object({
   transactionExternalId: z.string().uuid(),
-  status: z.enum(["APPROVED", "REJECTED"]),
+  status: z.enum(['APPROVED', 'REJECTED']),
   evaluatedAt: z.string().datetime(),
 });

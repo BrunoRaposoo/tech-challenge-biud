@@ -53,24 +53,28 @@
 ```
 
 **Alternativas descartadas:**
-- *Nx vs Turborepo:* Nx mais pesado, generators desnecessários para 3 apps; Turborepo entrega cache com config mínima.
-- *Repos separados:* dificulta `shared` e `pnpm quality` único; CI teria que orquestrar 3 repos.
-- *pnpm puro sem Turborepo:* sem cache, `pnpm quality` fica lento e CI repete trabalho.
+
+- _Nx vs Turborepo:_ Nx mais pesado, generators desnecessários para 3 apps; Turborepo entrega cache com config mínima.
+- _Repos separados:_ dificulta `shared` e `pnpm quality` único; CI teria que orquestrar 3 repos.
+- _pnpm puro sem Turborepo:_ sem cache, `pnpm quality` fica lento e CI repete trabalho.
 
 ---
 
 ## 3. Fundação — Tooling e Quality Gate
 
 ### TypeScript
+
 - `strict: true`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitReturns`, `noFallthroughCasesInSwitch`, `forceConsistentCasingInFileNames`.
 - Paths `@repo/*`, `noImplicitAny`, ban `any` via ESLint `no-explicit-any`.
 
 ### Lint / Format / Hooks
+
 - **ESLint flat** + `typescript-eslint`, `eslint-plugin-import`, `eslint-config-prettier` (desliga conflitos). Prettier 3.x.
 - **Husky** + `lint-staged`: `pre-commit` roda `eslint --fix` e `prettier --write` só nos staged.
 - **commitlint** + `commit-msg` hook: valida Conventional Commits (`feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert`), branch `feat/kebab-case`.
 
 ### Quality Gate
+
 ```json
 // package.json raiz
 "scripts": {
@@ -83,18 +87,22 @@
   "quality": "turbo run lint typecheck && prettier --check . && turbo run test -- --run && turbo run build"
 }
 ```
+
 - Cada app expõe `lint`, `typecheck` (`tsc --noEmit`), `test` (`vitest --run`), `build` (`nest build` / `next build`).
 - `turbo.json` pipeline com `dependsOn: ["^build"]` e cache `outputs: ["dist/**", ".next/**"]`.
 
 ### CI
+
 `.github/workflows/ci.yml`:
+
 ```yaml
 on: [push, pull_request]
 jobs:
   quality:
     runs-on: ubuntu-latest
     services:
-      postgres: { image: postgres:16-alpine, env: { POSTGRES_PASSWORD: postgres }, ports: ["5432:5432"] }
+      postgres:
+        { image: postgres:16-alpine, env: { POSTGRES_PASSWORD: postgres }, ports: ['5432:5432'] }
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -103,6 +111,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm quality
 ```
+
 Badge verde obrigatório na entrega.
 
 ---
@@ -110,6 +119,7 @@ Badge verde obrigatório na entrega.
 ## 4. Backend — Modelagem e API
 
 ### Prisma
+
 ```prisma
 // prisma/schema.prisma (raiz ou apps/transactions/prisma)
 generator client { provider = "prisma-client-js" }
@@ -147,9 +157,10 @@ model Transaction {
 **Alternativas:** `status` como tabela lookup vs enum — enum vence por 3 valores fixos de regra de negócio; `type` como tabela permite evoluir sem deploy.
 
 ### Contratos
+
 ```ts
 // packages/shared/src/schemas/transaction.ts
-import { z } from "zod";
+import { z } from 'zod';
 export const createTransactionSchema = z.object({
   accountExternalIdDebit: z.string().uuid(),
   accountExternalIdCredit: z.string().uuid(),
@@ -168,17 +179,19 @@ export const transactionCreatedEventSchema = z.object({
 });
 export const transactionStatusUpdatedEventSchema = z.object({
   transactionExternalId: z.string().uuid(),
-  status: z.enum(["APPROVED", "REJECTED"]),
+  status: z.enum(['APPROVED', 'REJECTED']),
   evaluatedAt: z.string().datetime(),
 });
 ```
 
 ### Endpoints (Transactions service — NestJS)
+
 - `POST /transactions` → 201 `{ transactionExternalId, transactionType: { name }, transactionStatus: { name: "PENDING" }, value, createdAt }` + publica `transaction.created` (key=externalId, acks=all).
 - `GET /transactions/:externalId` → 200 ou 404 `{ statusCode, message }` padronizado.
 - `GET /transactions?page=1&limit=10&status=PENDING&type=1&from=2026-01-01&to=2026-08-26` → `{ data: [...], meta: { page, limit, total, totalPages } }`.
 
 ### Validação e Erros (Context7 Nest)
+
 - `ZodValidationPipe implements PipeTransform` — `schema.parse` → `BadRequestException({ message: "Validation failed", errors: zod.flatten })`.
 - Hierarquia: `DomainException extends HttpException`, `TransactionNotFoundException extends NotFoundException`, `ValidationException extends BadRequestException` com `errors: [{ field, message }]`.
 - Filtros globais:
@@ -189,6 +202,7 @@ export const transactionStatusUpdatedEventSchema = z.object({
 - `APP_FILTER` global + `APP_PIPE` se necessário, logs pino com `requestId`.
 
 ### Kafka
+
 - **Cliente:** `kafkajs` (leve, suporta KRaft, retry/DLQ nativo; validado vs `confluent-kafka` que exige librdkafka).
 - **Tópicos:** `transaction.created` (produzido por transactions, consumido por anti-fraud, partitions=3, key=externalId), `transaction.status.updated` (produzido por anti-fraud, consumido por transactions).
 - **Grupos:** `KAFKA_GROUP_ID_TRANSACTIONS`, `KAFKA_GROUP_ID_ANTI_FRAUD` via env.
@@ -201,55 +215,83 @@ export const transactionStatusUpdatedEventSchema = z.object({
 ## 5. Frontend — Dashboard
 
 ### Stack
+
 - Next.js 15 (App Router, `fetch` com `cache: no-store` para server components se necessário), React 19, Tailwind 4, `react-hook-form` + `zodResolver`, `date-fns`.
 
 ### Rotas
+
 - `/` — Dashboard: filtros (status, tipo, período), tabela paginada, paginação.
 - `/transactions/[externalId]` — Detalhe: `GET /transactions/:id`.
 - `/transactions/new` — Form criação.
 
 ### Data Layer (Context7 TanStack Query)
+
 ```ts
 // lib/api/transactions.ts
-export const useTransactions = (filters) => useQuery({
-  queryKey: ["transactions", filters],
-  queryFn: () => fetch(`/api/transactions?${qs.stringify(filters)}`).then(r=>r.json()),
-  refetchInterval: (query) => {
-    const hasPending = (query.state.data as any)?.data?.some(t=>t.transactionStatus.name==="PENDING");
-    return hasPending ? 3000 : false;
-  },
-  refetchIntervalInBackground: false,
-  retry: 1,
-});
+export const useTransactions = (filters) =>
+  useQuery({
+    queryKey: ['transactions', filters],
+    queryFn: () => fetch(`/api/transactions?${qs.stringify(filters)}`).then((r) => r.json()),
+    refetchInterval: (query) => {
+      const hasPending = (query.state.data as any)?.data?.some(
+        (t) => t.transactionStatus.name === 'PENDING',
+      );
+      return hasPending ? 3000 : false;
+    },
+    refetchIntervalInBackground: false,
+    retry: 1,
+  });
 
 export const useCreateTransaction = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (dto: CreateTransactionDto) => fetch("/api/transactions", { method:"POST", body: JSON.stringify(dto)}).then(r=>{ if(!r.ok) throw r; return r.json()}),
+    mutationFn: (dto: CreateTransactionDto) =>
+      fetch('/api/transactions', { method: 'POST', body: JSON.stringify(dto) }).then((r) => {
+        if (!r.ok) throw r;
+        return r.json();
+      }),
     onMutate: async (newTx) => {
-      await qc.cancelQueries({ queryKey: ["transactions"] });
-      const prev = qc.getQueryData(["transactions"]);
-      qc.setQueryData(["transactions"], (old:any) => ({ ...old, data: [{ ...newTx, transactionStatus:{name:"PENDING"} }, ...old.data]}));
+      await qc.cancelQueries({ queryKey: ['transactions'] });
+      const prev = qc.getQueryData(['transactions']);
+      qc.setQueryData(['transactions'], (old: any) => ({
+        ...old,
+        data: [{ ...newTx, transactionStatus: { name: 'PENDING' } }, ...old.data],
+      }));
       return { prev };
     },
-    onError: (_e, _v, ctx) => qc.setQueryData(["transactions"], ctx?.prev),
-    onSettled: () => qc.invalidateQueries({ queryKey: ["transactions"] }),
+    onError: (_e, _v, ctx) => qc.setQueryData(['transactions'], ctx?.prev),
+    onSettled: () => qc.invalidateQueries({ queryKey: ['transactions'] }),
   });
 };
 ```
+
 - `refetchInterval` dinâmico validado em Context7 — pausa quando não há pendentes.
 - Alternativas SSE/WebSocket descartadas: exigem manter conexão server-side, volume pendente baixo não justifica custo.
 
 ### Estado Cliente (Context7 Zustand)
+
 ```ts
 // stores/filter-store.ts
-import { create } from "zustand";
-type Filters = { status?: string; type?: string; from?: string; to?: string; page: number; limit: number };
-export const useFilterStore = create<Filters & { set: (p: Partial<Filters>)=>void }>((set)=>({ page:1, limit:10, set:(p)=>set(p)}));
+import { create } from 'zustand';
+type Filters = {
+  status?: string;
+  type?: string;
+  from?: string;
+  to?: string;
+  page: number;
+  limit: number;
+};
+export const useFilterStore = create<Filters & { set: (p: Partial<Filters>) => void }>((set) => ({
+  page: 1,
+  limit: 10,
+  set: (p) => set(p),
+}));
 ```
+
 - Redux Toolkit descartado: `configureStore` + `createSlice` + Immer = boilerplate para estado de filtros/paginação; Zustand é hook simples, sem provider obrigatório, compatível com Next.js via context se necessário (docs Zustand).
 
 ### UI / Acessibilidade
+
 - Estados: `isLoading` → `<div role="status" aria-live="polite">Carregando...</div>` skeleton; `isError` → `<div role="alert">` + botão Retry; `data.length===0` → empty com CTA "Criar transação".
 - Form: `useForm({ resolver: zodResolver(createTransactionSchema) })`, erros por campo, `aria-invalid`, `aria-describedby`.
 - `StatusBadge` com cores (amarelo pendente, verde aprovado, vermelho rejeitado).
@@ -259,11 +301,13 @@ export const useFilterStore = create<Filters & { set: (p: Partial<Filters>)=>voi
 ## 6. Testes
 
 ### Backend (Vitest)
+
 - **Unit:** regra `value > 1000` (casos 1000, 1000.01, 999.99), `ZodValidationPipe`, `TransactionService`, `AntiFraudService`.
 - **Integração:** `Test.createTestingModule` + Prisma Testcontainers (`@testcontainers/postgresql`) + Kafka mock (`kafkajs` mock ou `testcontainers/kafka`), testa fluxo `POST → emit created → consume → emit updated → consume → status`.
 - **Critério:** comportamento, não implementação; `getByRole` não aplica ao backend.
 
 ### Frontend (Vitest + Testing Library + Playwright)
+
 - **Unit/Component:** listagem com filtros, estados loading/error/empty via `getByRole`, detalhe, form validação (zod), `StatusBadge`.
 - **E2E (Playwright):** `POST /transactions` → lista mostra PENDING → após ~3s muda para APPROVED/REJECTED (mock Kafka ou aguarda real).
 - Todos rodam em `pnpm test` e `pnpm quality`; CI roda mesmo comando.
@@ -273,13 +317,17 @@ export const useFilterStore = create<Filters & { set: (p: Partial<Filters>)=>voi
 ## 7. DECISIONS.md — Estrutura
 
 Cada decisão segue formato `PRACTICES.md`:
+
 ```md
 ## <Título>
+
 **Decisão:** ...
 **Alternativas consideradas:** ...
 **Por quê:** ...
 ```
+
 Decisões obrigatórias:
+
 1. Monorepo Turborepo vs Nx vs repos separados
 2. Modelagem (enum vs lookup, externalId vs id)
 3. Formato eventos (JSON + Zod, key=externalId)
@@ -296,6 +344,7 @@ Decisões obrigatórias:
 **Pergunta do README:** lidar com volume alto de escritas/leituras concorrentes.
 
 **Abordagem defendida:**
+
 - **Escrita:** idempotência por `transactionExternalId` (unique + key Kafka) → `INSERT ... ON CONFLICT DO NOTHING` ou `UPDATE WHERE status=PENDING`; partição Kafka por externalId garante ordem por transação; retry com backoff + DLQ evita poison blocking; réplicas stateless de `transactions`/`anti-fraud` atrás de LB, cada consumer group escala horizontalmente (até nº partições).
 - **Leitura:** índices `status+createdAt`, paginação por cursor (`createdAt + id`) para evitar `OFFSET` caro; para escala, read replica Postgres + cache Redis para `GET /transactions` (TTL curto, invalida em `status.updated`); CDN para assets Next.
 - **Evolução:** Outbox pattern (tabela + poller + transactional outbox) para atomicidade DB+Kafka sem 2PC; para exactly-once, Kafka transactions (idempotent producer + `transactional.id`), mas custo não justifica volume inicial.
@@ -338,4 +387,4 @@ Cada slice: `pnpm quality` local + testes manuais → push → PR para `develop`
 
 ---
 
-*Fim do design. Próximo passo: `writing-plans` para decompor em tasks verificáveis e gerar plano de implementação por slice.*
+_Fim do design. Próximo passo: `writing-plans` para decompor em tasks verificáveis e gerar plano de implementação por slice._
