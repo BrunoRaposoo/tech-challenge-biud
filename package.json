@@ -13,9 +13,14 @@
     "test": "turbo run test -- --run",
     "build": "turbo run build",
     "quality": "turbo run lint typecheck && prettier --check . && turbo run test -- --run && turbo run build",
-    "dev": "turbo run dev"
+    "dev": "turbo run dev",
+    "prepare": "husky"
   },
   "devDependencies": {
+    "@commitlint/cli": "^19.0.0",
+    "@commitlint/config-conventional": "^19.0.0",
+    "husky": "^9.1.0",
+    "lint-staged": "^15.0.0",
     "prettier": "^3.3.3",
     "turbo": "^2.3.0",
     "typescript": "^5.6.0"
