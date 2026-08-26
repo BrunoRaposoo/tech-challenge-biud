@@ -60,6 +60,9 @@ importers:
       '@prisma/client':
         specifier: ^5.22.0
         version: 5.22.0(prisma@5.22.0)
+      '@repo/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       reflect-metadata:
         specifier: ^0.2.0
         version: 0.2.2
