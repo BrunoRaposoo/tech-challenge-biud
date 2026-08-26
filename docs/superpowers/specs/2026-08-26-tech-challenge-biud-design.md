@@ -5,7 +5,8 @@
 **Stack obrigatória:** Node 24 LTS + pnpm + NestJS + Prisma + Postgres + Kafka + Next.js + React + Tailwind + Vitest  
 **Runtime adotado:** Node 24 LTS (atualiza de 22+ do README para LTS mais recente; ver §3 e DECISIONS.md: segurança, compatibilidade e suporte prolongado — README permite mudar infra “se sua arquitetura pedir outra coisa, registre o porquê”)  
 **Infra local:** `docker-compose.yml` (Postgres 16-alpine, confluentinc/cp-kafka:7.7.1 KRaft, kafka-ui)  
-**Fluxo feature-by-feature:** Fundação → Transações criação/recuperação → Anti-fraud + consumo retorno → Listagem paginada → Frontend dashboard → Polimento
+**Fluxo feature-by-feature:** Fundação → Transações criação/recuperação (+ OpenAPI retro-fit) → Anti-fraud + consumo retorno (+ OpenAPI) → Listagem paginada → Frontend dashboard → Polimento  
+**Addendum:** OpenAPI/Swagger desde o início para testes manuais sem Postman (ver §5) — aprovado 2026-08-26
 
 ---
 
@@ -18,6 +19,7 @@
 - **Pacote `@repo/shared` com Zod** — contratos Kafka compartilhados, validação consistente, sem drift.
 - **TanStack Query polling dinâmico + Zustand mínimo** — resolve transação `PENDING` que muda fora do request sem custo de SSE/WebSocket.
 - **Tratamento de erro hierárquico (Nest Exception Filters + Zod pipe)** — sem retornos genéricos, erros por campo.
+- **OpenAPI/Swagger desde o início (ambos serviços, zod-to-openapi)** — testes manuais sem Postman via `/api/docs` (ver §5).
 
 > Consultas Context7 realizadas: TanStack Query (`/tanstack/query` — `refetchInterval` dinâmico, optimistic updates), Zustand (`/pmndrs/zustand` — comparação com Redux Toolkit), NestJS (`/nestjs/docs.nestjs.com` — `ExceptionFilter`, `ZodValidationPipe`, `HttpAdapterHost`).
 
@@ -28,11 +30,11 @@
 ```
 /
 ├─ apps/
-│  ├─ transactions/        # NestJS API 3001 — CRUD + Kafka producer/consumer
+│  ├─ transactions/        # NestJS API 3001 — CRUD + Kafka producer/consumer + Swagger /api/docs
 │  │  ├─ src/modules/transactions/
 │  │  ├─ src/modules/kafka/
 │  │  └─ prisma/schema.prisma (ou prisma raiz compartilhado)
-│  ├─ anti-fraud/          # NestJS 3002 — consumer created → producer status.updated
+│  ├─ anti-fraud/          # NestJS 3002 — consumer created → producer status.updated + Swagger /api/docs
 │  └─ web/                 # Next.js App Router 3000
 │     ├─ app/(dashboard)/page.tsx
 │     ├─ app/transactions/[id]/page.tsx
@@ -212,7 +214,51 @@ export const transactionStatusUpdatedEventSchema = z.object({
 
 ---
 
-## 5. Frontend — Dashboard
+## 5. OpenAPI / Swagger — Desde o Início (ambos serviços)
+
+**Escopo aprovado:** `transactions` (3001) **e** `anti-fraud` (3002) expõem Swagger UI, sem precisar de Postman/Insomnia/Bruno. Cada app tem `/api/docs` (UI) + `/api/docs-json` (OpenAPI JSON).
+
+**Stack (validado Context7 `/nestjs/swagger`):** `@nestjs/swagger@^7.4` + `swagger-ui-express` + `zod-to-openapi@^4` para gerar schemas OpenAPI a partir do Zod em `@repo/shared`. `DocumentBuilder` + `SwaggerModule.createDocument(app, config)` + `SwaggerModule.setup('api/docs', app, document)` com `app.setGlobalPrefix('api')`.
+
+**Fonte da verdade:** Zod em `@repo/shared` (`createTransactionSchema`, `transactionCreatedEventSchema`). Bridge via `zod-to-openapi`: `createZodDto(createTransactionSchema)` registra `CreateTransaction` no `DocumentBuilder`, evita duplicar DTOs com `@ApiProperty`. Alternativas descartadas: DTO duplicado (drift) e `patchNestJsSwagger` (magic, benchmark menor).
+
+**Setup em `main.ts` (ambos apps, antes de `listen`):**
+
+```ts
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { createZodDto } from 'zod-to-openapi';
+
+const config = new DocumentBuilder()
+  .setTitle('Transactions API — BIUD Challenge')
+  .setDescription(
+    'Criação e consulta de transações com validação antifraude assíncrona (PENDING → APPROVED/REJECTED, regra >1000). Teste manual via Swagger UI sem Postman.',
+  )
+  .setVersion('1.0.0')
+  .addTag('transactions', 'Criação e consulta')
+  .addTag('health', 'Probe')
+  .build();
+
+const document = SwaggerModule.createDocument(app, config);
+SwaggerModule.setup('api/docs', app, document, {
+  useGlobalPrefix: true,
+  explorer: true,
+  jsonDocumentUrl: '/api/docs-json',
+  yamlDocumentUrl: '/api/docs-yaml',
+  customSiteTitle: 'BIUD Transactions — Swagger',
+});
+```
+
+Para `anti-fraud`, título `Anti-Fraud API`, tag `anti-fraud`, mesmo `api/docs` na porta 3002.
+
+**Decorators nos controllers:** `@ApiTags`, `@ApiOperation({ summary: 'Cria transação PENDING' })`, `@ApiResponse({ status: 201, description: 'PENDING criado' })`, `@ApiBody({ type: CreateZodDto })`, `@ApiParam` para `externalId`. Respostas de erro (`400` com `errors` por campo, `404`, `500`) documentadas via `addGlobalResponse`.
+
+**Qualidade e testes:** `pnpm build` gera docs sem erro; `pnpm test` inclui smoke `expect(document.paths['/api/transactions'])` para garantir rota documentada; `lint` permite imports `swagger`; `pnpm quality` inclui docs.
+
+**Infra:** `name: challenge` no `docker-compose.yml` já garante `challenge-*` containers únicos; Swagger em `http://localhost:3001/api/docs` e `http://localhost:3002/api/docs` testáveis após `docker compose up -d`.
+
+---
+
+## 6. Frontend — Dashboard
 
 ### Stack
 
@@ -298,7 +344,7 @@ export const useFilterStore = create<Filters & { set: (p: Partial<Filters>) => v
 
 ---
 
-## 6. Testes
+## 7. Testes
 
 ### Backend (Vitest)
 
@@ -314,7 +360,7 @@ export const useFilterStore = create<Filters & { set: (p: Partial<Filters>) => v
 
 ---
 
-## 7. DECISIONS.md — Estrutura
+## 8. DECISIONS.md — Estrutura
 
 Cada decisão segue formato `PRACTICES.md`:
 
@@ -335,11 +381,12 @@ Decisões obrigatórias:
 5. Atualização status na UI (polling dinâmico 3s vs SSE vs WebSocket)
 6. Estratégia testes (Vitest + Testing Library `getByRole` vs data-testid)
 7. Runtime Node 24 LTS vs 22 (segurança, compatibilidade, LTS)
-8. Resposta alta concorrência (ver seção 8)
+8. OpenAPI com Zod (zod-to-openapi vs DTO duplicado vs nestjs-zod patch)
+9. Resposta alta concorrência (ver seção 9)
 
 ---
 
-## 8. Alta Concorrência — Como abordar (sem implementar)
+## 9. Alta Concorrência — Como abordar (sem implementar)
 
 **Pergunta do README:** lidar com volume alto de escritas/leituras concorrentes.
 
@@ -354,20 +401,20 @@ Decisões obrigatórias:
 
 ---
 
-## 9. Sequência de Implementação (feature-by-feature)
+## 10. Sequência de Implementação (feature-by-feature)
 
 1. **Fundação** (`feat/fundacao-projeto`): monorepo, shared, eslint, husky, commitlint, turbo, `pnpm quality`, CI verde, Prisma init + `.env` validado.
-2. **Transações criação/recuperação** (`feat/criacao-e-consulta-transacao`): Nest `POST/GET`, Prisma, Zod pipe, Exception Filters, `@repo/shared`, testes unit/integração, DLQ esqueleto.
-3. **Antifraude + retorno** (`feat/fluxo-antifraude-kafka`): Nest anti-fraud, regra >1000, producers/consumers kafkajs, testes fluxo assíncrono.
-4. **Listagem paginada** (`feat/listagem-paginada`): `GET /transactions` com filtros, índices, testes paginação.
+2. **Transações criação/recuperação** (`feat/criacao-e-consulta-transacao`): Nest `POST/GET`, Prisma, Zod pipe, Exception Filters, `@repo/shared`, testes unit/integração, DLQ esqueleto — **retro-fit OpenAPI**: `GET /api/docs` com `zod-to-openapi` (transações).
+3. **Antifraude + retorno** (`feat/fluxo-antifraude-kafka`): Nest anti-fraud, regra >1000, producers/consumers kafkajs, testes fluxo assíncrono — **OpenAPI**: `GET /api/docs` na porta 3002 (anti-fraud).
+4. **Listagem paginada** (`feat/listagem-paginada`): `GET /transactions` com filtros, índices, testes paginação (já documentado no Swagger).
 5. **Frontend dashboard** (`feat/dashboard-listagem` → `feat/dashboard-detalhe` → `feat/dashboard-criacao`): Next + Tailwind + Query + Zustand, estados loading/error/empty, form, polling dinâmico, testes RTL/Playwright.
-6. **Polimento** (`docs/decisoes-e-readme`): `DECISIONS.md` completo, README substituto (como rodar `cp .env.example .env && docker compose up -d && pnpm install && pnpm dev`), checklist PR.
+6. **Polimento** (`docs/decisoes-e-readme`): `DECISIONS.md` completo (inclui OpenAPI), README substituto (como rodar `cp .env.example .env && docker compose up -d && pnpm install && pnpm dev`, **Swagger em http://localhost:3001/api/docs e http://localhost:3002/api/docs**), checklist PR.
 
 Cada slice: `pnpm quality` local + testes manuais → push → PR para `develop` (template preenchido) → CI verde → merge manual pelo revisor.
 
 ---
 
-## 10. Riscos e Mitigações
+## 11. Riscos e Mitigações
 
 - **Kafka indisponível no boot:** healthcheck `docker-compose`, `retry` com backoff no producer, fila em memória limitada (descarta com log se estourar).
 - **Drift de contrato:** `@repo/shared` como single source of truth, CI quebra se schema não compila.
@@ -376,11 +423,13 @@ Cada slice: `pnpm quality` local + testes manuais → push → PR para `develop`
 
 ---
 
-## 11. Referências Context7
+## 12. Referências Context7
 
 - `/tanstack/query` — polling dinâmico, optimistic updates
 - `/pmndrs/zustand` — comparação Redux Toolkit, Next.js provider
 - `/nestjs/docs.nestjs.com` — ExceptionFilter, ZodValidationPipe, HttpAdapterHost
+- `/nestjs/swagger` — DocumentBuilder, SwaggerModule.createDocument/setup, useGlobalPrefix (394 snippets, benchmark 86.51)
+- `/zod-to-openapi` — bridge Zod → OpenAPI, createZodDto evita DTO duplicado
 - `/benlorantfy/nestjs-zod` — validação Zod em Nest (benchmark 92.58, alternativa considerada)
 - `/prisma/docs` (a consultar na implementação) — Decimal, índices, migrations
 - `/confluentinc/kafka` (a consultar) — KRaft, acks, idempotência
