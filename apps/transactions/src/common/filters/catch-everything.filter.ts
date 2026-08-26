@@ -10,13 +10,13 @@ export class CatchEverythingFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const httpStatus =
       exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
-    const responseBody: any = {
+    const responseBody: Record<string, unknown> = {
       statusCode: httpStatus,
       timestamp: new Date().toISOString(),
       path: httpAdapter.getRequestUrl(ctx.getRequest()),
     };
     if (exception instanceof HttpException) {
-      const resp = exception.getResponse() as any;
+      const resp = exception.getResponse() as Record<string, unknown>;
       responseBody.message = exception.message;
       if (resp?.errors) responseBody.errors = resp.errors;
     } else {

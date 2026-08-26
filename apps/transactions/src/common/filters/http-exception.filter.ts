@@ -8,11 +8,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
     const status = exception.getStatus();
-    const exceptionResponse = exception.getResponse() as any;
+    const exceptionResponse = exception.getResponse() as Record<string, unknown>;
     response.status(status).json({
       statusCode: status,
       message: exception.message,
-      errors: exceptionResponse?.errors ?? undefined,
+      errors: (exceptionResponse?.errors as unknown) ?? undefined,
       timestamp: new Date().toISOString(),
       path: request.url,
     });

@@ -7,6 +7,7 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
   const port = process.env.TRANSACTIONS_PORT ?? 3001;
   await app.listen(port);
+  // eslint-disable-next-line no-console
   console.log(`Transactions API listening on ${port}`);
 }
 bootstrap();

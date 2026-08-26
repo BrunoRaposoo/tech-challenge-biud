@@ -17,9 +17,12 @@ describe('ZodValidationPipe', () => {
     const pipe = new ZodValidationPipe(z.object({ value: z.number().positive() }));
     try {
       pipe.transform({ value: -1 });
-    } catch (e: any) {
-      expect(e.getResponse().errors).toBeDefined();
-      expect(e.getResponse().errors.value).toBeDefined();
+    } catch (e: unknown) {
+      const err = e as { getResponse: () => Record<string, unknown> };
+      const resp = err.getResponse() as Record<string, unknown>;
+      expect(resp.errors).toBeDefined();
+      const errors = resp.errors as Record<string, unknown>;
+      expect(errors.value).toBeDefined();
     }
   });
 });
