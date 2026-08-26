@@ -1,0 +1,30 @@
+{
+  "name": "@repo/transactions",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "nest build",
+    "dev": "nest start --watch"
+  },
+  "dependencies": {
+    "@nestjs/common": "^10.4.0",
+    "@nestjs/core": "^10.4.0",
+    "@nestjs/platform-express": "^10.4.0",
+    "@prisma/client": "^5.22.0",
+    "@repo/shared": "workspace:*",
+    "reflect-metadata": "^0.2.0",
+    "rxjs": "^7.8.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^10.4.0",
+    "@nestjs/schematics": "^10.0.0",
+    "@nestjs/testing": "^10.4.0",
+    "@types/express": "^5.0.6",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}
