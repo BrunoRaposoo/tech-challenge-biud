@@ -28,3 +28,12 @@ pnpm-debug.log*
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# superpowers brainstorm
+.superpowers/
+
+# worktrees
+.worktrees/
+
+# turbo cache
+.turbo/
