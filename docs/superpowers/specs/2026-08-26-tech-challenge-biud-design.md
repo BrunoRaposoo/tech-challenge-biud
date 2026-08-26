@@ -2,7 +2,8 @@
 
 **Data:** 2026-08-26  
 **Status:** Aprovado (brainstorming)  
-**Stack obrigatória:** Node 22 + pnpm + NestJS + Prisma + Postgres + Kafka + Next.js + React + Tailwind + Vitest  
+**Stack obrigatória:** Node 24 LTS + pnpm + NestJS + Prisma + Postgres + Kafka + Next.js + React + Tailwind + Vitest  
+**Runtime adotado:** Node 24 LTS (atualiza de 22+ do README para LTS mais recente; ver §3 e DECISIONS.md: segurança, compatibilidade e suporte prolongado — README permite mudar infra “se sua arquitetura pedir outra coisa, registre o porquê”)  
 **Infra local:** `docker-compose.yml` (Postgres 16-alpine, confluentinc/cp-kafka:7.7.1 KRaft, kafka-ui)  
 **Fluxo feature-by-feature:** Fundação → Transações criação/recuperação → Anti-fraud + consumo retorno → Listagem paginada → Frontend dashboard → Polimento
 
@@ -98,7 +99,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: pnpm }
+        with: { node-version: 24, cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: pnpm quality
 ```
@@ -285,7 +286,8 @@ Decisões obrigatórias:
 4. Tratamento falha mensageria (at-least-once + idempotência + DLQ vs outbox vs exactly-once)
 5. Atualização status na UI (polling dinâmico 3s vs SSE vs WebSocket)
 6. Estratégia testes (Vitest + Testing Library `getByRole` vs data-testid)
-7. Resposta alta concorrência (ver seção 8)
+7. Runtime Node 24 LTS vs 22 (segurança, compatibilidade, LTS)
+8. Resposta alta concorrência (ver seção 8)
 
 ---
 
