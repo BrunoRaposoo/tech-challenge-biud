@@ -31,3 +31,6 @@ pnpm-debug.log*
 
 # superpowers brainstorm
 .superpowers/
+
+# worktrees
+.worktrees/
