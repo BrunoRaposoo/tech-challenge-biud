@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createTransactionSchema } from './transaction.js';
+import { createTransactionSchema } from './transaction';
 describe('createTransactionSchema', () => {
   it('rejeita value negativo', () => {
     expect(() =>

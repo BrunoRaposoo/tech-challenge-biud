@@ -37,3 +37,6 @@ pnpm-debug.log*
 
 # turbo cache
 .turbo/
+
+# opencode - contains secrets, local config only
+opencode.json
