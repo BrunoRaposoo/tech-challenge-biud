@@ -35,7 +35,10 @@ describe('TransactionsService', () => {
         }),
       },
     };
-    kafka = { emit: vi.fn().mockResolvedValue(undefined) };
+    kafka = {
+      emitCreated: vi.fn().mockResolvedValue(undefined),
+      emit: vi.fn().mockResolvedValue(undefined),
+    };
     service = new TransactionsService(prisma, kafka);
   });
 
@@ -48,8 +51,7 @@ describe('TransactionsService', () => {
     });
     expect(result.transactionStatus.name).toBe('PENDING');
     expect(result.value).toBe(120);
-    expect(kafka.emit).toHaveBeenCalledWith(
-      'transaction.created',
+    expect(kafka.emitCreated).toHaveBeenCalledWith(
       expect.objectContaining({
         transactionExternalId: '550e8400-e29b-41d4-a716-446655440000',
       }),

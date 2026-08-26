@@ -4,6 +4,7 @@ import { Test } from '@nestjs/testing';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module.js';
 import { PrismaService } from './modules/prisma/prisma.service.js';
+import { KafkaService } from './modules/kafka/kafka.service.js';
 import { ParameterMetadataAccessor } from '@nestjs/swagger/dist/services/parameter-metadata-accessor.js';
 
 // Patch para vitest/esbuild sem emitDecoratorMetadata: evita crash quando PARAMTYPES_METADATA undefined
@@ -40,9 +41,17 @@ describe('Swagger', () => {
       },
     };
 
+    const kafkaMock = {
+      onModuleInit: async () => {},
+      onModuleDestroy: async () => {},
+      emitCreated: async () => {},
+      handleStatusUpdated: async () => {},
+    };
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(PrismaService)
       .useValue(prismaMock)
+      .overrideProvider(KafkaService)
+      .useValue(kafkaMock)
       .compile();
     const nestApp = moduleRef.createNestApplication();
     nestApp.setGlobalPrefix('api');

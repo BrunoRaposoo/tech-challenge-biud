@@ -109,6 +109,9 @@ importers:
       '@repo/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      kafkajs:
+        specifier: ^2.2.4
+        version: 2.2.4
       reflect-metadata:
         specifier: ^0.2.0
         version: 0.2.2

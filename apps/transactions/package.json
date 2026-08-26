@@ -16,6 +16,7 @@
     "@nestjs/swagger": "^7.4.0",
     "@prisma/client": "^5.22.0",
     "@repo/shared": "workspace:*",
+    "kafkajs": "^2.2.4",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.0",
     "swagger-ui-express": "^5.0.0",
