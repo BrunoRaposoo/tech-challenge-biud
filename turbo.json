@@ -1,6 +1,7 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "tasks": {
+    "generate": { "outputs": ["node_modules/.prisma/**", "node_modules/@prisma/client/**"] },
     "build": { "dependsOn": ["^build"], "outputs": ["dist/**", ".next/**"] },
     "lint": { "outputs": [] },
     "typecheck": { "dependsOn": ["^build"], "outputs": [] },

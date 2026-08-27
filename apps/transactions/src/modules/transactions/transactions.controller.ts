@@ -1,7 +1,11 @@
-import { Controller, Post, Get, Body, Param, UsePipes, Inject } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam } from '@nestjs/swagger';
+import { Controller, Post, Get, Body, Param, Query, UsePipes, Inject } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe.js';
-import { createTransactionSchema } from '@repo/shared';
+import {
+  createTransactionSchema,
+  listTransactionsQuerySchema,
+  ListTransactionsQuery,
+} from '@repo/shared';
 import { CreateTransactionDto } from './dto/create-transaction.dto.js';
 import { TransactionsService } from './transactions.service.js';
 
@@ -33,6 +37,41 @@ export class TransactionsController {
   @UsePipes(new ZodValidationPipe(createTransactionSchema))
   async create(@Body() dto: CreateTransactionDto) {
     return this.service.create(dto);
+  }
+
+  @Get()
+  @ApiOperation({
+    summary: 'Lista transações paginada',
+    description: 'Filtros por status, type e período (createdAt). Alimenta o dashboard.',
+  })
+  @ApiQuery({ name: 'status', required: false, enum: ['PENDING', 'APPROVED', 'REJECTED'] })
+  @ApiQuery({ name: 'type', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'from', required: false, type: String, example: '2026-01-01T00:00:00.000Z' })
+  @ApiQuery({ name: 'to', required: false, type: String, example: '2026-08-27T00:00:00.000Z' })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista paginada',
+    schema: {
+      example: {
+        data: [
+          {
+            transactionExternalId: '...',
+            transactionType: { name: 'PIX' },
+            transactionStatus: { name: 'PENDING' },
+            value: 120,
+            createdAt: '2026-08-27T00:00:00.000Z',
+          },
+        ],
+        meta: { page: 1, limit: 10, total: 20, totalPages: 2, hasNext: true, hasPrev: false },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Validation failed com errors por campo' })
+  @UsePipes(new ZodValidationPipe(listTransactionsQuerySchema))
+  async findAll(@Query() query: ListTransactionsQuery) {
+    return this.service.findAll(query);
   }
 
   @Get(':externalId')

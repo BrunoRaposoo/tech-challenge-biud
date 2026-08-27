@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { KafkaService } from '../kafka/kafka.service.js';
+import { ListTransactionsQuery } from '@repo/shared';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class TransactionsService {
@@ -68,6 +70,46 @@ export class TransactionsService {
       transactionStatus: { name: tx.status },
       value: Number(tx.value),
       createdAt: tx.createdAt,
+    };
+  }
+
+  async findAll(q: ListTransactionsQuery) {
+    const where: Prisma.TransactionWhereInput = {};
+    if (q.status) where.status = q.status;
+    if (q.type) where.transferTypeId = q.type;
+    if (q.from || q.to) {
+      const createdAt: Prisma.DateTimeFilter = {};
+      if (q.from) createdAt.gte = new Date(q.from);
+      if (q.to) createdAt.lte = new Date(q.to);
+      where.createdAt = createdAt;
+    }
+    const [data, total] = await Promise.all([
+      this.prisma.transaction.findMany({
+        where,
+        skip: (q.page - 1) * q.limit,
+        take: q.limit,
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        include: { type: true },
+      }),
+      this.prisma.transaction.count({ where }),
+    ]);
+    const totalPages = Math.ceil(total / q.limit) || 1;
+    return {
+      data: data.map((tx) => ({
+        transactionExternalId: tx.transactionExternalId,
+        transactionType: { name: tx.type.name },
+        transactionStatus: { name: tx.status },
+        value: Number(tx.value),
+        createdAt: tx.createdAt,
+      })),
+      meta: {
+        page: q.page,
+        limit: q.limit,
+        total,
+        totalPages,
+        hasNext: q.page < totalPages,
+        hasPrev: q.page > 1,
+      },
     };
   }
 }
