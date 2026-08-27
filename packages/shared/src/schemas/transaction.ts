@@ -19,3 +19,17 @@ export const transactionStatusUpdatedEventSchema = z.object({
   status: z.enum(['APPROVED', 'REJECTED']),
   evaluatedAt: z.string().datetime(),
 });
+export const listTransactionsQuerySchema = z
+  .object({
+    status: z.enum(['PENDING', 'APPROVED', 'REJECTED']).optional(),
+    type: z.coerce.number().int().positive().optional(),
+    from: z.string().datetime({ message: 'from deve ser ISO datetime' }).optional(),
+    to: z.string().datetime({ message: 'to deve ser ISO datetime' }).optional(),
+    page: z.coerce.number().int().min(1).default(1),
+    limit: z.coerce.number().int().min(1).max(50).default(10),
+  })
+  .refine((data) => !data.from || !data.to || new Date(data.from) <= new Date(data.to), {
+    message: 'from deve ser <= to',
+    path: ['from'],
+  });
+export type ListTransactionsQuery = z.infer<typeof listTransactionsQuerySchema>;
