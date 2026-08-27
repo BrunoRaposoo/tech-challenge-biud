@@ -478,15 +478,13 @@ describe('Fluxo PENDING → APPROVED', () => {
       transaction: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
       transactionType: { findUnique: vi.fn().mockResolvedValue({ id: 1, name: 'PIX' }) },
       transaction: {
-        create: vi
-          .fn()
-          .mockResolvedValue({
-            transactionExternalId: 'x',
-            value: 120,
-            status: 'PENDING',
-            createdAt: new Date(),
-            type: { name: 'PIX' },
-          }),
+        create: vi.fn().mockResolvedValue({
+          transactionExternalId: 'x',
+          value: 120,
+          status: 'PENDING',
+          createdAt: new Date(),
+          type: { name: 'PIX' },
+        }),
       },
     } as any;
     // mock

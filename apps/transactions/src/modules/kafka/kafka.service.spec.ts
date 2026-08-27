@@ -2,10 +2,9 @@ import { describe, it, expect, vi } from 'vitest';
 import { KafkaService } from './kafka.service.js';
 describe('KafkaService handleStatusUpdated', () => {
   it('updateMany WHERE PENDING idempotente', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const prisma = {
       transaction: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
-    } as unknown as any;
+    } as unknown as import('../prisma/prisma.service.js').PrismaService;
     const svc = new KafkaService(prisma);
     await svc.handleStatusUpdated({
       transactionExternalId: '550e8400-e29b-41d4-a716-446655440000',
@@ -18,10 +17,9 @@ describe('KafkaService handleStatusUpdated', () => {
     });
   });
   it('no-op se já não PENDING', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const prisma = {
       transaction: { updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
-    } as unknown as any;
+    } as unknown as import('../prisma/prisma.service.js').PrismaService;
     const svc = new KafkaService(prisma);
     await expect(
       svc.handleStatusUpdated({
