@@ -128,17 +128,15 @@ describe('TransactionsService.findAll', () => {
   it('monta where com status/type/from/to e skip/take', async () => {
     const prisma = {
       transaction: {
-        findMany: vi
-          .fn()
-          .mockResolvedValue([
-            {
-              transactionExternalId: 'x',
-              value: 120,
-              status: 'PENDING',
-              createdAt: new Date(),
-              type: { name: 'PIX' },
-            },
-          ]),
+        findMany: vi.fn().mockResolvedValue([
+          {
+            transactionExternalId: 'x',
+            value: 120,
+            status: 'PENDING',
+            createdAt: new Date(),
+            type: { name: 'PIX' },
+          },
+        ]),
         count: vi.fn().mockResolvedValue(20),
       },
     } as any;

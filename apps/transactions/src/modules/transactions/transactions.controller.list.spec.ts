@@ -4,8 +4,8 @@ import { TransactionsController } from './transactions.controller.js';
 import { TransactionsService } from './transactions.service.js';
 describe('TransactionsController.findAll', () => {
   it('delega para service com query', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const mockService = {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       findAll: async (q: any) => ({
         data: [],
         meta: {
@@ -19,19 +19,24 @@ describe('TransactionsController.findAll', () => {
       }),
       create: async () => ({}),
       findOne: async () => ({}),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any;
     const mod = await Test.createTestingModule({
       controllers: [TransactionsController],
       providers: [{ provide: TransactionsService, useValue: mockService }],
     }).compile();
     const ctrl = mod.get(TransactionsController);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = await ctrl.findAll({ page: 1, limit: 10 } as any);
+    const result = await ctrl.findAll(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { page: 1, limit: 10 } as any,
+    );
     expect(result.meta.page).toBe(1);
   });
   it('valida query invalida via pipe (status)', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const mockService = { findAll: async () => ({}) } as any;
+    const mockService = {
+      findAll: async () => ({}),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any;
     const mod = await Test.createTestingModule({
       controllers: [TransactionsController],
       providers: [{ provide: TransactionsService, useValue: mockService }],
