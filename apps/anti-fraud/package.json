@@ -1,5 +1,5 @@
 {
-  "name": "@repo/transactions",
+  "name": "@repo/anti-fraud",
   "private": true,
   "version": "0.0.0",
   "scripts": {
@@ -14,20 +14,16 @@
     "@nestjs/core": "^10.4.0",
     "@nestjs/platform-express": "^10.4.0",
     "@nestjs/swagger": "^7.4.0",
-    "@prisma/client": "^5.22.0",
-    "@repo/shared": "workspace:*",
-    "kafkajs": "^2.2.4",
-    "reflect-metadata": "^0.2.0",
-    "rxjs": "^7.8.0",
     "swagger-ui-express": "^5.0.0",
+    "kafkajs": "^2.2.4",
+    "@repo/shared": "workspace:*",
     "zod": "^3.23.0",
-    "zod-to-openapi": "npm:@asteasolutions/zod-to-openapi@^4.0.0"
+    "reflect-metadata": "^0.2.0",
+    "rxjs": "^7.8.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.4.0",
-    "@nestjs/schematics": "^10.0.0",
     "@nestjs/testing": "^10.4.0",
-    "@types/express": "^5.0.6",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"
   }

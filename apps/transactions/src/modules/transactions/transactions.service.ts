@@ -34,7 +34,7 @@ export class TransactionsService {
       },
       include: { type: true },
     });
-    await this.kafka.emit('transaction.created', {
+    await this.kafka.emitCreated({
       transactionExternalId: tx.transactionExternalId,
       accountExternalIdDebit: tx.accountExternalIdDebit,
       accountExternalIdCredit: tx.accountExternalIdCredit,
