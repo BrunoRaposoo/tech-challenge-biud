@@ -4,17 +4,15 @@ describe('TransactionsService.findAll', () => {
   it('monta where com status/type/from/to e skip/take', async () => {
     const prisma = {
       transaction: {
-        findMany: vi
-          .fn()
-          .mockResolvedValue([
-            {
-              transactionExternalId: 'x',
-              value: 120,
-              status: 'PENDING',
-              createdAt: new Date(),
-              type: { name: 'PIX' },
-            },
-          ]),
+        findMany: vi.fn().mockResolvedValue([
+          {
+            transactionExternalId: 'x',
+            value: 120,
+            status: 'PENDING',
+            createdAt: new Date(),
+            type: { name: 'PIX' },
+          },
+        ]),
         count: vi.fn().mockResolvedValue(20),
       },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -45,12 +43,12 @@ describe('TransactionsService.findAll', () => {
       hasNext: false,
       hasPrev: true,
     });
-    expect(result.data[0].transactionStatus.name).toBe('PENDING');
+    expect(result.data[0]!.transactionStatus.name).toBe('PENDING');
   });
   it('sem filtros retorna tudo com page 1', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const prisma = {
       transaction: { findMany: vi.fn().mockResolvedValue([]), count: vi.fn().mockResolvedValue(0) },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const svc = new TransactionsService(prisma, {} as any);

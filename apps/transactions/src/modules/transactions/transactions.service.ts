@@ -77,11 +77,12 @@ export class TransactionsService {
     const where: Prisma.TransactionWhereInput = {};
     if (q.status) where.status = q.status;
     if (q.type) where.transferTypeId = q.type;
-    if (q.from || q.to)
-      where.createdAt = {
-        gte: q.from ? new Date(q.from) : undefined,
-        lte: q.to ? new Date(q.to) : undefined,
-      };
+    if (q.from || q.to) {
+      const createdAt: Prisma.DateTimeFilter = {};
+      if (q.from) createdAt.gte = new Date(q.from);
+      if (q.to) createdAt.lte = new Date(q.to);
+      where.createdAt = createdAt;
+    }
     const [data, total] = await Promise.all([
       this.prisma.transaction.findMany({
         where,
