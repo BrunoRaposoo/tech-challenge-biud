@@ -1,7 +1,7 @@
 'use client';
 import { Card, Metric, Text, Badge } from '@tremor/react';
-import { useTransactions } from '../../lib/api/transactions.js';
-import { useFilterStore } from '../../stores/filter-store.js';
+import { useTransactions } from '../../lib/api/transactions';
+import { useFilterStore } from '../../stores/filter-store';
 export function MetricCards() {
   const filters = useFilterStore();
   const { data } = useTransactions({ ...filters, page: 1, limit: 1 });

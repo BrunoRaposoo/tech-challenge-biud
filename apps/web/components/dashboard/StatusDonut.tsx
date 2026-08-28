@@ -17,7 +17,7 @@ export function StatusDonut({
   return (
     <Card>
       <Title>Distribuição por Status</Title>
-      <DonutChart data={data} colors={['amber', 'emerald', 'red']} showTooltip showLegend />
+      <DonutChart data={data} colors={['amber', 'emerald', 'red']} showTooltip />
     </Card>
   );
 }
