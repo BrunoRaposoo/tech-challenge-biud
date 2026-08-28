@@ -13,6 +13,7 @@
     "@hookform/resolvers": "^3.9.0",
     "@repo/shared": "workspace:*",
     "@tanstack/react-query": "^5.60.0",
+    "@tremor/react": "^3.18.0",
     "date-fns": "^3.6.0",
     "next": "^15.0.0",
     "react": "^19.0.0",
