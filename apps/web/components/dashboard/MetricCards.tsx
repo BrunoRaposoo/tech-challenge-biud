@@ -1,37 +1,48 @@
 'use client';
-import { Card, Metric, Text, Badge } from '@tremor/react';
-import { useTransactions } from '../../lib/api/transactions';
-import { useFilterStore } from '../../stores/filter-store';
+import { useStatusMetrics } from '../../lib/hooks/useStatusMetrics';
+import { StatusPill } from '../StatusPill';
+function Kpi({
+  label,
+  value,
+  sub,
+  status,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  status?: string;
+}) {
+  return (
+    <div className="rounded-xl border border-[#E2E8F0] bg-white p-5 shadow-sm">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
+          {label}
+        </span>
+        {status ? <StatusPill status={status} /> : null}
+      </div>
+      <div className="mt-2 text-3xl font-bold text-ink">{value}</div>
+      {sub ? <div className="mt-1 text-xs text-ink-faint">{sub}</div> : null}
+    </div>
+  );
+}
 export function MetricCards() {
-  const { status, type, from, to, page, limit } = useFilterStore();
-  const baseFilters = { status, type, from, to, page, limit };
-  const { data } = useTransactions({ ...baseFilters, page: 1, limit: 1 });
-  const pending = useTransactions({ ...baseFilters, status: 'PENDING', page: 1, limit: 1 });
-  const approved = useTransactions({ ...baseFilters, status: 'APPROVED', page: 1, limit: 1 });
-  const rejected = useTransactions({ ...baseFilters, status: 'REJECTED', page: 1, limit: 1 });
-  const total = data?.meta.total ?? 0;
+  const m = useStatusMetrics();
+  const pct = (n: number) => (m.total ? Math.round((n / m.total) * 100) : 0);
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-      <Card className="bg-amber-50">
-        <Text>Pendentes</Text>
-        <Metric>{pending.data?.meta.total ?? 0}</Metric>
-        <Badge color="amber">Polling 3s</Badge>
-      </Card>
-      <Card className="bg-emerald-50">
-        <Text>Aprovadas</Text>
-        <Metric>{approved.data?.meta.total ?? 0}</Metric>
-        <Badge color="emerald">
-          {total ? Math.round(((approved.data?.meta.total ?? 0) / total) * 100) : 0}%
-        </Badge>
-      </Card>
-      <Card className="bg-red-50">
-        <Text>Rejeitadas</Text>
-        <Metric>{rejected.data?.meta.total ?? 0}</Metric>
-        <Badge color="red">
-          {rejected.data?.meta.total ?? 0} •{' '}
-          {total ? Math.round(((rejected.data?.meta.total ?? 0) / total) * 100) : 0}%
-        </Badge>
-      </Card>
+      <Kpi label="Pendentes" value={String(m.pending)} sub="atualiza a cada 3s" status="PENDING" />
+      <Kpi
+        label="Aprovadas"
+        value={`${pct(m.approved)}%`}
+        sub={`${m.approved} transações`}
+        status="APPROVED"
+      />
+      <Kpi
+        label="Rejeitadas"
+        value={`${pct(m.rejected)}%`}
+        sub={`${m.rejected} acima de R$ 1.000`}
+        status="REJECTED"
+      />
     </div>
   );
 }

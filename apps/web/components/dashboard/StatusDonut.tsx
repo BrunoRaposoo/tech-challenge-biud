@@ -15,9 +15,14 @@ export function StatusDonut({
     { name: 'Rejeitadas', value: rejected },
   ];
   return (
-    <Card>
-      <Title>Distribuição por Status</Title>
-      <DonutChart data={data} colors={['amber', 'emerald', 'red']} showTooltip />
+    <Card className="rounded-xl border border-[#E2E8F0] shadow-sm">
+      <Title className="font-semibold text-ink">Distribuição por Status</Title>
+      <DonutChart
+        data={data}
+        colors={['#F59E0B', '#10B981', '#EF4444']}
+        showTooltip
+        variant="donut"
+      />
     </Card>
   );
 }
