@@ -1,6 +1,12 @@
 'use client';
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { useFilterStore } from '../stores/filter-store';
+import { useFilterStore, type Filters } from '../stores/filter-store';
+const STATUS_OPTIONS = ['PENDING', 'APPROVED', 'REJECTED'] as const;
+type Status = Filters['status'];
+function parseStatus(value: string): Status {
+  return (STATUS_OPTIONS as readonly string[]).includes(value)
+    ? (value as NonNullable<Status>)
+    : undefined;
+}
 export function Filters() {
   const { status, set, reset } = useFilterStore();
   return (
@@ -12,7 +18,7 @@ export function Filters() {
           </span>
           <select
             value={status ?? ''}
-            onChange={(e) => set({ status: (e.target.value as any) || undefined })}
+            onChange={(e) => set({ status: parseStatus(e.target.value) })}
             className="w-full rounded-lg border border-[#E2E8F0] px-3 py-2 text-sm text-ink focus:border-brand focus:outline-none"
           >
             <option value="">Todos os status</option>
