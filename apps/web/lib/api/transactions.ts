@@ -1,6 +1,26 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { CreateTransactionDto } from '@repo/shared';
+
+type TransactionItem = {
+  transactionExternalId: string;
+  transactionType: { name: string };
+  transactionStatus: { name: 'PENDING' | 'APPROVED' | 'REJECTED' };
+  value: number;
+  createdAt: string;
+};
+type TransactionList = {
+  data: TransactionItem[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+};
+
 export const useTransactions = (filters: any) => {
   const cleanFilters = Object.fromEntries(
     Object.entries(filters).filter(
@@ -33,28 +53,54 @@ export const useTransaction = (id: string) =>
 export const useCreateTransaction = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (dto: CreateTransactionDto) =>
-      fetch('/api/transactions', {
+    mutationFn: async (dto: CreateTransactionDto) => {
+      const res = await fetch('/api/transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dto),
-      }).then(async (r) => {
-        if (!r.ok) {
-          const e = await r.json();
-          throw e;
-        }
-        return r.json();
-      }),
-    onMutate: async (newTx) => {
-      await qc.cancelQueries({ queryKey: ['transactions'] });
-      const prev = qc.getQueryData(['transactions']);
-      qc.setQueryData(['transactions'], (old: any) => ({
-        ...old,
-        data: [{ ...newTx, transactionStatus: { name: 'PENDING' } }, ...old.data],
-      }));
-      return { prev };
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.message ?? 'Não foi possível criar a transação.');
+      }
+      return res.json();
     },
-    onError: (_e, _v, ctx) => qc.setQueryData(['transactions'], (ctx as any).prev),
+    onMutate: async (newTx) => {
+      // Cancela refetches em voo para não sobrescrever o update otimista.
+      await qc.cancelQueries({ queryKey: ['transactions'] });
+
+      // Snapshot das queries existentes (todas as chaves ['transactions', ...]).
+      const previous = qc.getQueriesData<TransactionList>({ queryKey: ['transactions'] });
+
+      const optimistic = {
+        transactionExternalId: `pendente-${Date.now()}`,
+        transactionType: { name: 'PIX' },
+        transactionStatus: { name: 'PENDING' as const },
+        value: newTx.value,
+        createdAt: new Date().toISOString(),
+      };
+
+      qc.setQueriesData<TransactionList>({ queryKey: ['transactions'] }, (old) => ({
+        data: [optimistic, ...(old?.data ?? [])],
+        meta: old?.meta ?? {
+          page: 1,
+          limit: 10,
+          total: 0,
+          totalPages: 1,
+          hasNext: false,
+          hasPrev: false,
+        },
+      }));
+
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      // Reverte cada query para o snapshot anterior em caso de falha.
+      const previous = context?.previous ?? [];
+      for (const [key, data] of previous) {
+        qc.setQueryData(key, data);
+      }
+    },
     onSettled: () => qc.invalidateQueries({ queryKey: ['transactions'] }),
   });
 };
