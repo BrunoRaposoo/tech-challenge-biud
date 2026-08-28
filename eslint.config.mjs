@@ -9,9 +9,13 @@ export default [
       'build/**',
       '**/build/**',
       '.next/**',
+      '**/.next/**',
       'coverage/**',
+      '**/coverage/**',
       'node_modules/**',
       'prisma/**',
+      'next-env.d.ts',
+      '**/next-env.d.ts',
     ],
   },
 ];
