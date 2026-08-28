@@ -1,15 +1,18 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { CreateTransactionDto } from '@repo/shared';
+import type { Filters } from '../../stores/filter-store';
 
-type TransactionItem = {
+export type TransactionStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export type TransactionItem = {
   transactionExternalId: string;
   transactionType: { name: string };
-  transactionStatus: { name: 'PENDING' | 'APPROVED' | 'REJECTED' };
+  transactionStatus: { name: TransactionStatus };
   value: number;
   createdAt: string;
 };
-type TransactionList = {
+
+export type TransactionList = {
   data: TransactionItem[];
   meta: {
     page: number;
@@ -21,23 +24,23 @@ type TransactionList = {
   };
 };
 
-export const useTransactions = (filters: any) => {
+export const useTransactions = (filters: Filters) => {
   const cleanFilters = Object.fromEntries(
     Object.entries(filters).filter(
       ([, v]) => v !== undefined && v !== null && v !== '' && typeof v !== 'function',
     ),
   );
-  return useQuery({
+  return useQuery<TransactionList>({
     queryKey: ['transactions', filters],
     queryFn: () =>
-      fetch(`/api/transactions?${new URLSearchParams(cleanFilters as any)}`).then((r) => {
+      fetch(
+        `/api/transactions?${new URLSearchParams(cleanFilters as Record<string, string>)}`,
+      ).then((r) => {
         if (!r.ok) throw new Error('Failed to fetch');
-        return r.json();
+        return r.json() as Promise<TransactionList>;
       }),
     refetchInterval: (q) =>
-      (q.state.data as any)?.data?.some((t: any) => t.transactionStatus.name === 'PENDING')
-        ? 3000
-        : false,
+      q.state.data?.data.some((t) => t.transactionStatus.name === 'PENDING') ? 3000 : false,
     refetchIntervalInBackground: false,
   });
 };

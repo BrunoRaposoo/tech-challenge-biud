@@ -48,7 +48,7 @@ Formato: **Decisão**, **Alternativas consideradas**, **Por quê** (conforme `PR
 
 ## 4. Tratamento de Falha na Mensageria
 
-**Decisão:** `at-least-once` + **idempotência** `UPDATE ... WHERE status='PENDING'` (`updateMany` com `count 0 → no-op`), `transactionExternalId @unique` para deduplicação, `acks: -1` (all), `idempotent:true`, `retry: { retries:3, initialRetryTime:100, multiplier:2 }`, DLQ `transaction.created.dlq` e `transaction.status.updated.dlq` para `safeParse` falha ou `JSON.parse` throw, `commit` após DLQ para não bloquear partição.
+**Decisão:** `at-least-once` + **idempotência** `UPDATE ... WHERE status='PENDING'` (`updateMany` com `count 0 → no-op`), `transactionExternalId @unique` para deduplicação, `acks: -1` (all), `idempotent:true`, retry **no producer** (`retries:3` + backoff). Nos consumers: mensagem **inválida** (JSON malformado ou `safeParse` falho) vai para o DLQ (`transaction.created.dlq` / `transaction.status.updated.dlq`), preservando a `key`; **falha de processamento** (ex.: banco) é relançada para não commitar o offset e o kafkajs reentregar.
 
 **Alternativas consideradas:**
 

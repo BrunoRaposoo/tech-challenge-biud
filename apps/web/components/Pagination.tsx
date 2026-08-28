@@ -3,14 +3,16 @@ import { useFilterStore } from '../stores/filter-store';
 export function Pagination({
   meta,
 }: {
-  meta?: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-    hasNext: boolean;
-    hasPrev: boolean;
-  };
+  meta?:
+    | {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+        hasNext: boolean;
+        hasPrev: boolean;
+      }
+    | undefined;
 }) {
   const { set } = useFilterStore();
   if (!meta) return null;

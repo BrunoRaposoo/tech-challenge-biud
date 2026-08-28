@@ -3,7 +3,13 @@ export const createTransactionSchema = z.object({
   accountExternalIdDebit: z.string().uuid(),
   accountExternalIdCredit: z.string().uuid(),
   transferTypeId: z.number().int().positive(),
-  value: z.number().positive().max(9999999999),
+  value: z
+    .number()
+    .positive()
+    .max(9999999999)
+    .refine((v) => Math.abs(v * 100 - Math.round(v * 100)) < 1e-6, {
+      message: 'value deve ter no máximo 2 casas decimais',
+    }),
 });
 export type CreateTransactionDto = z.infer<typeof createTransactionSchema>;
 export const transactionCreatedEventSchema = z.object({

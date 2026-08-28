@@ -1,9 +1,9 @@
 import { create } from 'zustand';
-type Filters = {
-  status?: 'PENDING' | 'APPROVED' | 'REJECTED';
-  type?: number;
-  from?: string;
-  to?: string;
+export type Filters = {
+  status?: 'PENDING' | 'APPROVED' | 'REJECTED' | undefined;
+  type?: number | undefined;
+  from?: string | undefined;
+  to?: string | undefined;
   page: number;
   limit: number;
 };
@@ -21,5 +21,5 @@ export const useFilterStore = create<
       to: undefined,
       page: 1,
       limit: 10,
-    } as unknown as Partial<Filters>),
+    }),
 }));

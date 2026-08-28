@@ -1,8 +1,9 @@
 'use client';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function VolumeBar({ data }: { data: any[] }) {
+type Bucket = { faixa: string; count: number };
+
+export function VolumeBar({ data }: { data: Bucket[] }) {
   const totalZero = data.every((d) => d.count === 0);
 
   return (

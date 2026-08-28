@@ -24,21 +24,31 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
     await this.consumer.run({
       eachMessage: async ({ message }) => {
         const raw = message.value?.toString() ?? '';
+        const key = message.key?.toString();
+
+        let parsed: ReturnType<typeof transactionStatusUpdatedEventSchema.safeParse>;
         try {
-          const parsed = transactionStatusUpdatedEventSchema.safeParse(JSON.parse(raw));
-          if (!parsed.success) {
-            await this.producer.send({
-              topic: 'transaction.status.updated.dlq',
-              messages: [{ value: raw }],
-            });
-            return;
-          }
-          await this.handleStatusUpdated(parsed.data);
+          parsed = transactionStatusUpdatedEventSchema.safeParse(JSON.parse(raw));
         } catch {
-          await this.producer.send({
-            topic: 'transaction.status.updated.dlq',
-            messages: [{ value: raw }],
-          });
+          this.logger.error('Mensagem inválida (JSON) em transaction.status.updated — DLQ.');
+          await this.sendToDlq('transaction.status.updated', raw, key);
+          return;
+        }
+
+        if (!parsed.success) {
+          this.logger.warn(`Payload inválido: ${parsed.error.message} — DLQ.`);
+          await this.sendToDlq('transaction.status.updated', raw, key);
+          return;
+        }
+
+        try {
+          await this.handleStatusUpdated(parsed.data);
+        } catch (err) {
+          // Falha de processamento (ex.: banco): não commita o offset; o kafkajs reentrega.
+          this.logger.error(
+            `Falha ao processar transaction.status.updated: ${err instanceof Error ? err.message : String(err)}`,
+          );
+          throw err;
         }
       },
     });
@@ -69,6 +79,12 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
     await this.prisma.transaction.updateMany({
       where: { transactionExternalId: payload.transactionExternalId, status: 'PENDING' },
       data: { status: payload.status },
+    });
+  }
+  private async sendToDlq(topic: string, value: string, key?: string) {
+    await this.producer.send({
+      topic: `${topic}.dlq`,
+      messages: [{ ...(key ? { key } : {}), value }],
     });
   }
 }

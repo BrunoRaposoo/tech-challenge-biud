@@ -8,8 +8,8 @@ import { Pagination } from '../components/Pagination';
 import { MetricCards } from '../components/dashboard/MetricCards';
 import { StatusDonut } from '../components/dashboard/StatusDonut';
 import { VolumeBar } from '../components/dashboard/VolumeBar';
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function buildBuckets(list: any[]) {
+import type { TransactionItem } from '../lib/api/transactions';
+function buildBuckets(list: TransactionItem[]) {
   const buckets = [
     { faixa: '0-250', count: 0 },
     { faixa: '250-500', count: 0 },
