@@ -1,5 +1,4 @@
 'use client';
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   Card,
   Table,
@@ -10,13 +9,14 @@ import {
   TableCell,
 } from '@tremor/react';
 import { StatusPill } from './StatusPill';
+import type { TransactionItem } from '../lib/api/transactions';
 export function TransactionTable({
   data,
   isLoading,
   isError,
   refetch,
 }: {
-  data?: any[];
+  data?: TransactionItem[] | undefined;
   isLoading?: boolean;
   isError?: boolean;
   refetch?: () => void;
@@ -88,7 +88,7 @@ export function TransactionTable({
             </TableRow>
           </TableHead>
           <TableBody>
-            {data.map((t: any) => (
+            {data.map((t) => (
               <TableRow key={t.transactionExternalId} className="hover:bg-slate-50">
                 <TableCell className="font-mono text-brand">
                   {t.transactionExternalId.slice(0, 8)}…
@@ -105,7 +105,7 @@ export function TransactionTable({
         </Table>
       </div>
       <div className="space-y-2 sm:hidden">
-        {data.map((t: any) => (
+        {data.map((t) => (
           <div key={t.transactionExternalId} className="rounded-lg border border-[#E2E8F0] p-3">
             <div className="flex items-center justify-between">
               <span className="font-mono text-xs text-brand">

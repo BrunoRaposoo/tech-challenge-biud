@@ -28,7 +28,10 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
       messages: [{ key: payload.transactionExternalId, value: JSON.stringify(payload) }],
     });
   }
-  async emitDlq(topic: string, value: string) {
-    await this.producer.send({ topic: `${topic}.dlq`, messages: [{ value }] });
+  async emitDlq(topic: string, value: string, key?: string) {
+    await this.producer.send({
+      topic: `${topic}.dlq`,
+      messages: [{ ...(key ? { key } : {}), value }],
+    });
   }
 }

@@ -23,23 +23,30 @@ export class KafkaConsumer implements OnModuleInit, OnModuleDestroy {
     await this.consumer.run({
       eachMessage: async ({ message }) => {
         const raw = message.value?.toString() ?? '';
+        const key = message.key?.toString();
+
+        let parsed: ReturnType<typeof transactionCreatedEventSchema.safeParse>;
         try {
-          const parsed = transactionCreatedEventSchema.safeParse(JSON.parse(raw));
-          if (!parsed.success) {
-            this.logger.warn(`Invalid transaction.created: ${parsed.error.message}`);
-            await this.kafkaService.emitDlq('transaction.created', raw);
-            return;
-          }
-          const status = this.antiFraud.evaluate(parsed.data.value);
-          await this.kafkaService.emitStatusUpdated({
-            transactionExternalId: parsed.data.transactionExternalId,
-            status,
-            evaluatedAt: new Date().toISOString(),
-          });
-        } catch (e) {
-          this.logger.warn(`Failed to process transaction.created: ${e}`);
-          await this.kafkaService.emitDlq('transaction.created', raw);
+          parsed = transactionCreatedEventSchema.safeParse(JSON.parse(raw));
+        } catch {
+          this.logger.error('Mensagem inválida (JSON) em transaction.created — DLQ.');
+          await this.kafkaService.emitDlq('transaction.created', raw, key);
+          return;
         }
+
+        if (!parsed.success) {
+          this.logger.warn(`Payload inválido: ${parsed.error.message} — DLQ.`);
+          await this.kafkaService.emitDlq('transaction.created', raw, key);
+          return;
+        }
+
+        // Avaliação + publicação: falha aqui não deve commitar o offset (kafkajs reentrega).
+        const status = this.antiFraud.evaluate(parsed.data.value);
+        await this.kafkaService.emitStatusUpdated({
+          transactionExternalId: parsed.data.transactionExternalId,
+          status,
+          evaluatedAt: new Date().toISOString(),
+        });
       },
     });
   }

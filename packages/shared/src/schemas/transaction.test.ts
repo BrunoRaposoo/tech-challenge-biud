@@ -21,6 +21,26 @@ describe('createTransactionSchema', () => {
       }),
     ).not.toThrow();
   });
+  it('rejeita value com mais de 2 casas decimais', () => {
+    expect(() =>
+      createTransactionSchema.parse({
+        accountExternalIdDebit: '550e8400-e29b-41d4-a716-446655440000',
+        accountExternalIdCredit: '550e8400-e29b-41d4-a716-446655440001',
+        transferTypeId: 1,
+        value: 120.999,
+      }),
+    ).toThrow();
+  });
+  it('aceita value com 2 casas decimais', () => {
+    expect(() =>
+      createTransactionSchema.parse({
+        accountExternalIdDebit: '550e8400-e29b-41d4-a716-446655440000',
+        accountExternalIdCredit: '550e8400-e29b-41d4-a716-446655440001',
+        transferTypeId: 1,
+        value: 120.5,
+      }),
+    ).not.toThrow();
+  });
 });
 describe('listTransactionsQuerySchema', () => {
   it('page default 1, limit default 10', () => {
