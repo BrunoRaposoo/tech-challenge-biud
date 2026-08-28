@@ -1,17 +1,24 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { CreateTransactionDto } from '@repo/shared';
-export const useTransactions = (filters: any) =>
-  useQuery({
+export const useTransactions = (filters: any) => {
+  const cleanFilters = Object.fromEntries(
+    Object.entries(filters).filter(([, v]) => v !== undefined && v !== null && v !== ''),
+  );
+  return useQuery({
     queryKey: ['transactions', filters],
     queryFn: () =>
-      fetch(`/api/transactions?${new URLSearchParams(filters as any)}`).then((r) => r.json()),
+      fetch(`/api/transactions?${new URLSearchParams(cleanFilters as any)}`).then((r) => {
+        if (!r.ok) throw new Error('Failed to fetch');
+        return r.json();
+      }),
     refetchInterval: (q) =>
       (q.state.data as any)?.data?.some((t: any) => t.transactionStatus.name === 'PENDING')
         ? 3000
         : false,
     refetchIntervalInBackground: false,
   });
+};
 export const useTransaction = (id: string) =>
   useQuery({
     queryKey: ['transaction', id],
