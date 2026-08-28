@@ -28,6 +28,6 @@ describe('TransactionTable', () => {
         ]}
       />,
     );
-    expect(screen.getByRole('cell', { name: /PENDING/i })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: /Pendente/i })).toBeInTheDocument();
   });
 });

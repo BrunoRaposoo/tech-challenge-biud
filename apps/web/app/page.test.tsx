@@ -19,6 +19,6 @@ describe('Page', () => {
         <Page />
       </QueryClientProvider>,
     );
-    expect(await screen.findByText(/Todos status/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Todos os status/i)).toBeInTheDocument();
   });
 });
