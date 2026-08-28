@@ -3,11 +3,12 @@ import { Card, Metric, Text, Badge } from '@tremor/react';
 import { useTransactions } from '../../lib/api/transactions';
 import { useFilterStore } from '../../stores/filter-store';
 export function MetricCards() {
-  const filters = useFilterStore();
-  const { data } = useTransactions({ ...filters, page: 1, limit: 1 });
-  const pending = useTransactions({ ...filters, status: 'PENDING', page: 1, limit: 1 });
-  const approved = useTransactions({ ...filters, status: 'APPROVED', page: 1, limit: 1 });
-  const rejected = useTransactions({ ...filters, status: 'REJECTED', page: 1, limit: 1 });
+  const { status, type, from, to, page, limit } = useFilterStore();
+  const baseFilters = { status, type, from, to, page, limit };
+  const { data } = useTransactions({ ...baseFilters, page: 1, limit: 1 });
+  const pending = useTransactions({ ...baseFilters, status: 'PENDING', page: 1, limit: 1 });
+  const approved = useTransactions({ ...baseFilters, status: 'APPROVED', page: 1, limit: 1 });
+  const rejected = useTransactions({ ...baseFilters, status: 'REJECTED', page: 1, limit: 1 });
   const total = data?.meta.total ?? 0;
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
