@@ -63,7 +63,7 @@ Formato: **Decisão**, **Alternativas consideradas**, **Por quê** (conforme `PR
 
 ## 5. Atualização de Status na Interface
 
-**Decisão:** Polling dinâmico com `TanStack Query` `refetchInterval: (query) => query.state.data?.content.some(t=>t.status==='PENDING') ? 3000 : false`, `refetchIntervalInBackground: false`, `Zustand` apenas para filtros/paginação (server state no Query).
+**Decisão:** Polling dinâmico com `TanStack Query` `refetchInterval: (query) => query.state.data?.data.some((t) => t.transactionStatus.name === 'PENDING') ? 3000 : false`, `refetchIntervalInBackground: false`, `Zustand` apenas para filtros/paginação (server state no Query).
 
 **Alternativas consideradas:**
 
@@ -77,7 +77,7 @@ Formato: **Decisão**, **Alternativas consideradas**, **Por quê** (conforme `PR
 
 ## 6. Estratégia de Testes
 
-**Decisão:** Vitest + Testing Library, `getByRole` para frontend (`loading` → `role=status`, `error` → `role=alert`, `empty` → `role=status`), `any` banido, `pnpm quality` com `test: dependsOn ^build`, mocks para Kafka (`producer.send`/`consumer.run` em memória) nesta fase, `Testcontainers` documentado como evolução.
+**Decisão:** Vitest + Testing Library, `getByRole` para frontend (`loading` → `role=status`, `error` → `role=alert`, `empty` → `role=status`), ESLint `@typescript-eslint/no-explicit-any` habilitado (exceções pontuais em specs/mocks com `eslint-disable` justificado), `pnpm quality` com `test: dependsOn ^build`, mocks para Kafka (`producer.send`/`consumer.run` em memória) nesta fase, `Testcontainers` documentado como evolução.
 
 **Alternativas consideradas:**
 
@@ -140,3 +140,30 @@ Formato: **Decisão**, **Alternativas consideradas**, **Por quê** (conforme `PR
 - `@nestjs/microservices` `Transport.KAFKA` com `@MessagePattern` (abstração esconde `acks`/`retry`/`DLQ`/`commit`)
 
 **Por quê:** Regra pura sem I/O, escala horizontal sem DB, controle total de `acks`/`commit`/`DLQ`, `updateMany WHERE PENDING` torna `at-least-once` seguro, `pnpm dev` com `shared: tsc --watch` + `transactions`/`anti-fraud` `nest start --watch` e `docker compose` singleton `name: challenge`.
+
+---
+
+## 11. Frontend — Dashboard visual e gráficos
+
+**Decisão:** Dashboard com identidade "Fintech Clean" (índigo `#4F46E5` + grafite `#0F172A` + esmeralda/âmbar/vermelho para status), fonte `Inter` via `next/font`, tema claro único (sem dark mode), `Tremor` para `Card`/`Table` e **Recharts direto** para `Donut`/`Bar` (fill inline em hex). Mobile-first (`grid-cols-1 sm:grid-cols-3`, tabela vira cards no mobile).
+
+**Alternativas consideradas:**
+
+- `Tremor` para os gráficos também (as classes de cor `fill-[hex]`/`fill-{cor}-500` são construídas em runtime e não são geradas pelo Tailwind → gráficos pretos)
+- `Chart.js` + `react-chartjs-2` (imperativo, bundle maior)
+- Dark mode (descartado por escopo — tema claro único)
+
+**Por quê:** `Tremor` entrega `Card`/`Table` prontos economizando CSS manual; `Recharts` direto garante cores/fonte determinísticas (legenda `0.875rem`, todas as faixas visíveis via `interval={0}`), sem depender da geração frágil de classes do Tailwind.
+
+---
+
+## 12. Criação de Transação Simplificada
+
+**Decisão:** `POST /transactions` via formulário com **um único campo "Valor (R$)"**; `accountExternalIdDebit`/`accountExternalIdCredit` são gerados no cliente (`crypto.randomUUID`) e `transferTypeId` fixado em `1` (PIX). Sucesso → redireciona ao dashboard. Optimistic update com `getQueriesData`/`setQueriesData` (prefixo `['transactions']`) + rollback seguro.
+
+**Alternativas consideradas:**
+
+- `react-hook-form` + 4 campos (confuso, fricção desnecessária)
+- Select de tipo de transferência (só existe PIX seedado — YAGNI)
+
+**Por quê:** foco no que importa para o demo (valor; `>1000` é rejeitado pelo antifraude), sem alterar o contrato do backend (que segue validando `uuid`), e snapshot/rollback per kata do TanStack Query.
