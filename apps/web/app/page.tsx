@@ -5,7 +5,8 @@ import { TransactionTable } from '../components/TransactionTable';
 import { Filters } from '../components/Filters';
 import { Pagination } from '../components/Pagination';
 export default function Dashboard() {
-  const filters = useFilterStore();
+  const { status, type, from, to, page, limit } = useFilterStore();
+  const filters = { status, type, from, to, page, limit };
   const { data, isLoading, isError, refetch } = useTransactions(filters);
   return (
     <div>

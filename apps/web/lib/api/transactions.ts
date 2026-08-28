@@ -3,7 +3,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { CreateTransactionDto } from '@repo/shared';
 export const useTransactions = (filters: any) => {
   const cleanFilters = Object.fromEntries(
-    Object.entries(filters).filter(([, v]) => v !== undefined && v !== null && v !== ''),
+    Object.entries(filters).filter(
+      ([, v]) => v !== undefined && v !== null && v !== '' && typeof v !== 'function',
+    ),
   );
   return useQuery({
     queryKey: ['transactions', filters],
